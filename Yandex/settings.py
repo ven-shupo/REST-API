@@ -55,7 +55,7 @@ ROOT_URLCONF = 'Yandex.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['C:/Users/iopus/PycharmProjects/Yandex/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
