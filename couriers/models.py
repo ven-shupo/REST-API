@@ -1,14 +1,27 @@
 from django.db import models
 
 
+class Region(models.Model):
+    # all regions
+    place = models.IntegerField(unique=True)
+
+
 class Worker(models.Model):
-    courier_type = models.CharField(max_length=10)
+
+    # ENUM for courier_type
+    VEHICLE = [
+        ("foot", 'foot'),
+        ("bike", 'bike'),
+        ("car", 'car'),
+        ]
+
+    # feature's worker
+    courier_id = models.IntegerField(primary_key=True)
+    courier_type = models.CharField(max_length=200, choices=VEHICLE)
+    regions = models.ManyToManyField(Region, related_name='couriers')
 
 
-class Regions(models.Model):
-    courier = models.ForeignKey(Worker, on_delete=models.CASCADE)
 
 
-class Shedule(models.Model):
-    courier = models.ForeignKey(Worker, on_delete=models.CASCADE)
-    working_hours = models.CharField(max_length=200)
+
+

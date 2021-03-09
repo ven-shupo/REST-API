@@ -2,15 +2,12 @@ import json
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from couriers.query import create
 
 
 @csrf_exempt
 @require_POST
 def post_couriers(request):
-    """
-        из тела запроса вытащить json, заполнить бд
-        и вернуть json
-    """
     # read json
     list_couriers = json.loads(request.body)["data"]
 
@@ -21,13 +18,10 @@ def post_couriers(request):
     # fill in db
     for worker in list_couriers:
         try:
-            # ...some code...
-            pretty_id.append({'id': worker['courier_id']})
-            pass
+            temp = create(worker)
+            pretty_id.append({'id': temp})
         except IOError:
-            pass
-
-    # ...some code...
+            bad_id.append({'id': worker['courier_id']})
 
     # create response
     if not bad_id:
@@ -46,14 +40,17 @@ def edit_courier(request, courier_id):
     if request.method == "PATCH":
 
         # read json
-        # new_feature = json.loads(request.body)
+        new_feature = json.loads(request.body)
 
         # edit info in db
         try:
             # ...some code...
-            data_response = courier_id
+            data_response = new_feature
+
             # ...some code...
+
             return HttpResponse(json.dumps(data_response), status=200)
+        
         except IOError:
             return HttpResponse(status=400)
 
