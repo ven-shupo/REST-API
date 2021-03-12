@@ -1,8 +1,10 @@
 import json
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from couriers.query import create
+from couriers.query import set_id, set_interval, set_regions
 
 
 @csrf_exempt
@@ -14,14 +16,49 @@ def post_couriers(request):
     # prepare list for response
     bad_id = []
     pretty_id = []
+    valid_data = {"valid": []}
+
+    # flags
+    have_not_valid_data = 0
 
     # fill in db
     for worker in list_couriers:
         try:
-            temp = create(worker)
-            pretty_id.append({'id': temp})
-        except IOError:
+            courier = set_id(worker)
+            all_regions = set_regions(worker, courier)
+            all_interval = set_interval(worker, courier)
+        except ValueError as error:
+            have_not_valid_data = 1
+            print(error)
             bad_id.append({'id': worker['courier_id']})
+        except IntegrityError as error:
+            have_not_valid_data = 1
+            print(error)
+            bad_id.append({'id': worker['courier_id']})
+        except ValidationError as error:
+            have_not_valid_data = 1
+            print(error)
+            bad_id.append({'id': worker['courier_id']})
+        else:
+            if all_interval != [] and all_regions != [] and courier:
+                valid_data["valid"].append({"courier_id": courier,
+                                            "regions": all_regions,
+                                            "working_hours": all_interval
+                                            })
+                pretty_id.append({'id': worker['courier_id']})
+            else:
+                have_not_valid_data = 1
+                bad_id.append({'id': worker['courier_id']})
+
+    # save data if all complete with succeed
+    if have_not_valid_data == 0:
+        for person in valid_data["valid"]:
+            person["courier_id"].save()
+            for reg in person["regions"]:
+                reg.save()
+                person["courier_id"].regions.add(reg)
+            for interval in person["working_hours"]:
+                interval.save()
 
     # create response
     if not bad_id:

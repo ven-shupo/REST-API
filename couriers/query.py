@@ -1,53 +1,63 @@
-from couriers.models import Worker, Region
+import datetime
+
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from couriers.models import Worker, Region, Schedule
 
 
-def create(people):
-
+def set_id(people):
     # create courier, his id and type
-    try:
-        worker = Worker.objects.create(courier_id=people["courier_id"],
-                                       courier_type=people['courier_type'])
-    except:
-        print(people, "id or type is not valid")
-        raise IOError
+    worker = Worker()
+    worker.courier_id = people["courier_id"]
+    worker.courier_type = people['courier_type']
+    # validation
+    worker.full_clean()
+    return worker
 
-    # create all regions
+
+def set_interval(people, courier):
+    # validate
+    if not isinstance(people['working_hours'], list):
+        raise ValidationError(message='%s must be list' % people['working_hours'])
+    for elem in people['working_hours']:
+        if not isinstance(elem, str):
+            raise ValidationError(message='%s elem in list must be str' % people['working_hours'])
+    # prepare ans
+    all_interval = []
+    # create interval
+    for interval in people['working_hours']:
+
+        # create begin and end point
+        if len(interval.split('-')) != 2:
+            raise ValidationError(message="working hours not valid")
+        left, right = interval.split('-')
+        left = datetime.datetime.strptime(left, '%H:%M')
+        right = datetime.datetime.strptime(right, '%H:%M')
+        time = Schedule()
+        time.begin = left
+        time.end = right
+        all_interval.append(time)
+        time.courier = courier
+
+    return all_interval
+
+
+def set_regions(people, courier):
+    # validation
+    if not isinstance(people['regions'], list):
+        raise ValidationError(message='%s must be list' % people['regions'])
+    for elem in people['regions']:
+        if not isinstance(elem, int):
+            raise ValidationError(message='%s elem in list must be integer' % people['regions'])
+    # prepare ans
+    all_regions = []
+    # create or get regions
     for reg in people['regions']:
-        try:
-            # save reg
-            place = Region.objects.create(place=reg)
-            place.save()
-            # link with couriers
-            worker.regions.add(place)
-        except:
-            pass
-
-        # save worker
-        worker.save()
-    return people["courier_id"]
+        temp_place = Region.objects.get_or_create(place=reg)[0]
+        temp_place.full_clean()
+        all_regions.append(temp_place)
+    return all_regions
 
 
 
 
-
-
-
-
-
-    # """fill in db with couriers"""
-    # ...create...
-    # try:
-    #     worker = Worker.objects.create(courier_id=people["courier_id"],
-    #                                    courier_type=people['courier_type'])
-    #     region = Regions.objects.create(courier=worker)
-    #     table = Table.objects.create(courier=worker)
-    #     worker.save()
-    #     region.save()
-    #     table.save()
-    # except:
-    #     pass
-    # one to many
-    # table.add(*people["working_hours"])
-    # many to many
-    # region.region.add(*people['regions'])
-    # ...save...
