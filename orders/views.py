@@ -1,11 +1,11 @@
+import datetime
 import json
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from orders.query import set_id, set_interval, assign_orders
+from orders.query import set_id, set_interval, assign_orders, complete_order
 
 
 @csrf_exempt
@@ -17,6 +17,21 @@ def post_orders(request):
     bad_id = []
     pretty_id = []
     valid_data = {"valid": []}
+
+    # validation
+    all_id = []
+    not_unique_id = []
+    for order in list_order:
+        if order['order_id'] in all_id:
+            not_unique_id.append(order['order_id'])
+        else:
+            all_id.append(order['order_id'])
+
+    if not_unique_id:
+        bad_id = list(set(not_unique_id))
+        data_response = {"validation_error": {"orders": bad_id}}
+        status_response = 400
+        return JsonResponse(data_response, status=status_response)
 
     # flags
     have_not_valid_data = 0
@@ -83,9 +98,36 @@ def assign(request):
             # prepare response
             data_response = {"orders": order_id_list,
                              "assign_time": assign_time}
-
         return JsonResponse(data_response,
                             status=200)
-
     except ObjectDoesNotExist:
-        return JsonResponse(status=400)
+        return HttpResponse(status=400)
+
+
+@csrf_exempt
+@require_POST
+def complete(request):
+    # read json
+    data = json.loads(request.body)
+    courier_id = data["courier_id"]
+    order_id = data["order_id"]
+    # read DateTime
+    try:
+        complete_time = datetime.datetime.strptime(data["complete_time"], '%Y-%m-%dT%H:%M:%S.%fZ')
+    except ValueError as error:
+        print(error)
+        return HttpResponse(status=400)
+    # add complete order
+    try:
+        complete_order(courier_id, order_id, complete_time)
+    except ValidationError as error:
+        print(error)
+        return HttpResponse(status=400)
+    except ObjectDoesNotExist as error:
+        print(error)
+        return HttpResponse(status=400)
+    else:
+        return HttpResponse(status=200)
+
+
+

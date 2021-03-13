@@ -13,6 +13,21 @@ def post_couriers(request):
     # read json
     list_couriers = json.loads(request.body)["data"]
 
+    # validation
+    all_id = []
+    not_unique_id = []
+    for courier in list_couriers:
+        if courier['courier_id'] in all_id:
+            not_unique_id.append(courier['courier_id'])
+        else:
+            all_id.append(courier['courier_id'])
+
+    if not_unique_id:
+        bad_id = list(set(not_unique_id))
+        data_response = {"validation_error": {"couriers": bad_id}}
+        status_response = 400
+        return JsonResponse(data_response, status=status_response)
+
     # prepare list for response
     bad_id = []
     pretty_id = []
@@ -89,7 +104,7 @@ def edit_courier(request, courier_id):
             return JsonResponse(data_response, status=200)
         
         except IOError:
-            return JsonResponse(None, status=400)
+            return HttpResponse(status=400)
 
 
 

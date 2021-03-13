@@ -31,9 +31,16 @@ class Delivery_time(models.Model):
 
 
 class Order_to_Worker(models.Model):
-    order = models.OneToOneField(Order, on_delete=models.PROTECT)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE)
     courier = models.ForeignKey(Worker, on_delete=models.PROTECT)
     time_order = models.DateTimeField(blank=True)
+
+
+class Complete_Order(models.Model):
+    courier = models.ForeignKey(Worker, on_delete=models.PROTECT)
+    time_assign = models.DateTimeField(blank=True)
+    time_complete = models.DateTimeField(blank=True)
+
 
 
 

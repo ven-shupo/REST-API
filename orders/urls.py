@@ -3,5 +3,6 @@ from . import views
 
 urlpatterns = [
     url('^$', views.post_orders),
-    url('^/assign$', views.assign)
+    url('^/assign$', views.assign),
+    url('^/complete$', views.complete)
 ]
