@@ -1,11 +1,11 @@
 import json
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-
-from orders.query import set_id, set_interval
+from orders.query import set_id, set_interval, assign_orders
 
 
 @csrf_exempt
@@ -63,4 +63,29 @@ def post_orders(request):
         data_response = {"validation_error": {"orders": bad_id}}
         status_response = 400
 
-    return HttpResponse(json.dumps(data_response), status=status_response)
+    return JsonResponse(data_response, status=status_response)
+
+
+@csrf_exempt
+@require_POST
+def assign(request):
+    # read json
+    courier_id = json.loads(request.body)["courier_id"]
+    # assign orders
+    try:
+        # assign orders
+        order_id_list, assign_time = assign_orders(courier_id)
+
+        if not assign_time:
+            # prepare response
+            data_response = {"orders": []}
+        else:
+            # prepare response
+            data_response = {"orders": order_id_list,
+                             "assign_time": assign_time}
+
+        return JsonResponse(data_response,
+                            status=200)
+
+    except ObjectDoesNotExist:
+        return JsonResponse(status=400)

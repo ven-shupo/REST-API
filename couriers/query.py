@@ -1,7 +1,5 @@
 import datetime
-
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from couriers.models import Worker, Region, Schedule
 
 
