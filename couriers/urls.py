@@ -3,5 +3,5 @@ from . import views
 
 urlpatterns = [
     url('$', views.post_couriers),
-    url('/(\d+)$', views.edit_courier)
+    url(r'/(\d+)$', views.edit_courier)
 ]

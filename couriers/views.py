@@ -1,7 +1,7 @@
 import json
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from couriers.query import set_id, set_interval, set_regions
@@ -12,21 +12,6 @@ from couriers.query import set_id, set_interval, set_regions
 def post_couriers(request):
     # read json
     list_couriers = json.loads(request.body)["data"]
-
-    # validation
-    all_id = []
-    not_unique_id = []
-    for courier in list_couriers:
-        if courier['courier_id'] in all_id:
-            not_unique_id.append(courier['courier_id'])
-        else:
-            all_id.append(courier['courier_id'])
-
-    if not_unique_id:
-        bad_id = list(set(not_unique_id))
-        data_response = {"validation_error": {"couriers": bad_id}}
-        status_response = 400
-        return JsonResponse(data_response, status=status_response)
 
     # prepare list for response
     bad_id = []
@@ -83,7 +68,7 @@ def post_couriers(request):
         data_response = {"validation_error": {"couriers": bad_id}}
         status_response = 400
 
-    return JsonResponse(data_response, status=status_response)
+    return HttpResponse(json.dumps(data_response), status=status_response)
 
 
 @csrf_exempt
@@ -101,11 +86,8 @@ def edit_courier(request, courier_id):
 
             # ...some code...
 
-            return JsonResponse(data_response, status=200)
-        
+            return HttpResponse(json.dumps(data_response), status=200)
+
         except IOError:
             return HttpResponse(status=400)
-
-
-
 

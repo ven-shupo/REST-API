@@ -1,4 +1,5 @@
 import datetime
+
 from django.core.exceptions import ValidationError
 from couriers.models import Worker, Region, Schedule
 
@@ -51,11 +52,11 @@ def set_regions(people, courier):
     all_regions = []
     # create or get regions
     for reg in people['regions']:
-        temp_place = Region.objects.get_or_create(place=reg)[0]
+        try:
+            temp_place = Region.objects.get(place=reg)
+        except:
+            temp_place = Region()
+            temp_place.place = reg
         temp_place.full_clean()
         all_regions.append(temp_place)
     return all_regions
-
-
-
-

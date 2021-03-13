@@ -18,15 +18,15 @@ class Worker(models.Model):
 
     # ENUM for courier_type
     VEHICLE = [
-        ("foot", 10),
-        ("bike", 15),
-        ("car", 50),
+        ("foot", 'foot'),
+        ("bike", 'bike'),
+        ("car", 'car'),
         ]
 
     # feature's worker
     courier_id = models.IntegerField(primary_key=True, validators=[checker])
     courier_type = models.CharField(max_length=200, choices=VEHICLE)
-    regions = models.ManyToManyField(Region, related_name='couriers', default=None)
+    regions = models.ManyToManyField(Region, related_name='couriers')
 
 
 class Schedule(models.Model):
@@ -34,9 +34,3 @@ class Schedule(models.Model):
     courier = models.ForeignKey(Worker, on_delete=models.CASCADE)
     begin = models.TimeField()
     end = models.TimeField()
-
-
-
-
-
-
