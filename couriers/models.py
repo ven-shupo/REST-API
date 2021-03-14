@@ -1,14 +1,36 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+
+
+def checker(value):
+    if value <= 0:
+        raise ValidationError(message='%s is negative' % value)
+    if not isinstance(value, int):
+        raise ValidationError(message='%s is not an integer' % value)
+
+
+class Region(models.Model):
+    # all regions
+    place = models.IntegerField(unique=True, validators=[checker])
 
 
 class Worker(models.Model):
-    courier_type = models.CharField(max_length=10)
+
+    # ENUM for courier_type
+    VEHICLE = [
+        ("foot", 'foot'),
+        ("bike", 'bike'),
+        ("car", 'car'),
+        ]
+
+    # feature's worker
+    courier_id = models.IntegerField(primary_key=True, validators=[checker])
+    courier_type = models.CharField(max_length=200, choices=VEHICLE)
+    regions = models.ManyToManyField(Region, related_name='couriers')
 
 
-class Regions(models.Model):
+class Schedule(models.Model):
+    # Schedule workers
     courier = models.ForeignKey(Worker, on_delete=models.CASCADE)
-
-
-class Shedule(models.Model):
-    courier = models.ForeignKey(Worker, on_delete=models.CASCADE)
-    working_hours = models.CharField(max_length=200)
+    begin = models.TimeField()
+    end = models.TimeField()
