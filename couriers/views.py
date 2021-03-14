@@ -1,9 +1,11 @@
 import json
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+
+from couriers.models import Region
 from couriers.query import set_id, set_interval, set_regions
 
 
@@ -55,8 +57,14 @@ def post_couriers(request):
         for person in valid_data["valid"]:
             person["courier_id"].save()
             for reg in person["regions"]:
-                reg.save()
-                person["courier_id"].regions.add(reg)
+                try:
+                    reg.save()
+                except:
+                    print("\nreg already exists")
+                    reg = Region.objects.get(place=reg.place)
+                    print("\nreg update")
+                finally:
+                    person["courier_id"].regions.add(reg)
             for interval in person["working_hours"]:
                 interval.save()
 
@@ -68,7 +76,7 @@ def post_couriers(request):
         data_response = {"validation_error": {"couriers": bad_id}}
         status_response = 400
 
-    return HttpResponse(json.dumps(data_response), status=status_response)
+    return JsonResponse(data_response, status=status_response)
 
 
 @csrf_exempt
