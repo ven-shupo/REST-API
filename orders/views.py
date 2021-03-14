@@ -127,7 +127,7 @@ def complete(request):
         print(error)
         return HttpResponse(status=400)
     else:
-        return HttpResponse(status=200)
-
+        data_response = {"order_id": order_id}
+        return JsonResponse(data_response, status=200)
 
 

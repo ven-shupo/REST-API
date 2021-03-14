@@ -60,9 +60,7 @@ def post_couriers(request):
                 try:
                     reg.save()
                 except:
-                    print("\nreg already exists")
                     reg = Region.objects.get(place=reg.place)
-                    print("\nreg update")
                 finally:
                     person["courier_id"].regions.add(reg)
             for interval in person["working_hours"]:
