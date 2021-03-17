@@ -5,6 +5,9 @@ from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
+from couriers.models import Courier
+from orders.models import Order_to_Courier
 from orders.query import set_id, set_interval, assign_orders, complete_order
 
 
@@ -86,6 +89,22 @@ def post_orders(request):
 def assign(request):
     # read json
     courier_id = json.loads(request.body)["courier_id"]
+    # validation
+    try:
+        courier = Courier.objects.get(courier_id=courier_id)
+    except ObjectDoesNotExist as error:
+        print(error)
+        return HttpResponse(status=400)
+    else:
+        if Order_to_Courier.objects.filter(courier=courier):
+            not_complete_order_list = []
+            not_complete_assign_time = None
+            for task in Order_to_Courier.objects.filter(courier=courier):
+                not_complete_order_list.append({"id": task.order.order_id})
+                not_complete_assign_time = task.time_order
+            data_response = {"orders": not_complete_order_list,
+                             "assign_time": not_complete_assign_time}
+            return JsonResponse(data_response, status=200)
     # assign orders
     try:
         # assign orders
@@ -100,7 +119,11 @@ def assign(request):
                              "assign_time": assign_time}
         return JsonResponse(data_response,
                             status=200)
-    except ObjectDoesNotExist:
+    except ObjectDoesNotExist as error:
+        print(error)
+        return HttpResponse(status=400)
+    except ValueError as error:
+        print(error)
         return HttpResponse(status=400)
 
 

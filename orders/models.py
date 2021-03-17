@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from couriers.models import Worker
+from couriers.models import Courier
 
 
 def validator_id(value):
@@ -30,14 +30,17 @@ class Delivery_time(models.Model):
     end = models.TimeField()
 
 
-class Order_to_Worker(models.Model):
+class Order_to_Courier(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE)
-    courier = models.ForeignKey(Worker, on_delete=models.PROTECT)
+    courier = models.ForeignKey(Courier, on_delete=models.PROTECT)
     time_order = models.DateTimeField(blank=True)
+    
+    def __str__(self):
+        return "order_id:{}, courier_id:{}".format(self.order.order_id, self.courier.courier_id)
 
 
 class Complete_Order(models.Model):
-    courier = models.ForeignKey(Worker, on_delete=models.PROTECT)
+    courier = models.ForeignKey(Courier, on_delete=models.PROTECT)
     time_assign = models.DateTimeField(blank=True)
     time_complete = models.DateTimeField(blank=True)
 

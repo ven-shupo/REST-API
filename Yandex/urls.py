@@ -17,7 +17,7 @@ from django.conf.urls import url
 from django.contrib import admin
 from django.urls import include, path
 
-from myapp.views import CourierUpdateView
+from couriers.views import CourierUpdateView
 
 urlpatterns = [
     url('^couriers$', include('couriers.urls')),

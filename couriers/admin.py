@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import Schedule, Worker, Region
+from .models import Working_hours, Courier, Region
 
-admin.site.register(Schedule)
-admin.site.register(Worker)
+admin.site.register(Working_hours)
+admin.site.register(Courier)
 admin.site.register(Region)

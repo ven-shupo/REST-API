@@ -1,9 +1,9 @@
 import datetime
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import IntegrityError
 
-from orders.models import Order, Delivery_time, Order_to_Worker, Complete_Order
-from couriers.models import Worker, Region, Schedule
+from orders.models import Order, Delivery_time, Order_to_Courier, Complete_Order
+from couriers.models import Courier, Region, Working_hours
 
 
 def set_id(order_info):
@@ -44,14 +44,14 @@ def set_interval(order_info, order):
 
 def assign_orders(courier_id):
     # get courier
-    courier = Worker.objects.get(courier_id=courier_id)
+    courier = Courier.objects.get(courier_id=courier_id)
     courier_type = courier.courier_type
     # find regions for these courier
     courier_regions = []
     for i in Region.objects.filter(couriers__courier_id=courier_id):
         courier_regions.append(i.place)
     # find working time for these courier
-    courier_time = Schedule.objects.filter(courier_id=courier_id)
+    courier_time = Working_hours.objects.filter(courier_id=courier_id)
 
     # prepare ans
     assign_time = datetime.datetime.now()
@@ -62,6 +62,8 @@ def assign_orders(courier_id):
     for order in Order.objects.all():  # sorting out orders
         ans = find_suitable_order(order, courier, courier_regions, courier_type, courier_time, assign_time)
         if isinstance(ans, list):
+            courier.currently_weight += Order.objects.get(order_id=ans[0]).weight
+            courier.save()
             assign_order_id.append({"id": ans[0]})
             time = ans[1]
 
@@ -70,31 +72,31 @@ def assign_orders(courier_id):
 
 def find_suitable_order(order, courier, courier_regions, courier_type, courier_time, assign_time):
     if order.region in courier_regions:  # compare region
-        if compare_weight_type(order, courier_type):  # compare weight
+        if compare_weight_type(order, courier):  # compare weight
             for delivery_time in Delivery_time.objects.all():  # sorting out delivery time
                 for free_time in courier_time:  # sorting out working hours
                     if compare_delivery_working_time(delivery_time, free_time):  # compare time
                         try:
                             try:
-                                task = Order_to_Worker.objects.get(order=order, courier=courier)
-                            except:
-                                task = Order_to_Worker.objects.create(order=order, courier=courier,
-                                                                      time_order=assign_time)
+                                task = Order_to_Courier.objects.get(order=order, courier=courier)
+                            except ObjectDoesNotExist:
+                                task = Order_to_Courier.objects.create(order=order, courier=courier,
+                                                                       time_order=assign_time)
                                 task.save()
                             return [order.order_id, task.time_order]
                         except IntegrityError:
                             pass
 
 
-def compare_weight_type(order, courier_type):
-    if courier_type == "foot":
-        if order.weight <= 10:
+def compare_weight_type(order, courier):
+    if courier.courier_type == "foot":
+        if courier.currently_weight + order.weight <= 10:
             return True
-    if courier_type == "bike":
-        if order.weight <= 15:
+    if courier.courier_type == "bike":
+        if courier.currently_weight + order.weight <= 15:
             return True
-    if courier_type == "car":
-        if order.weight <= 50:
+    if courier.courier_type == "car":
+        if courier.currently_weight + order.weight <= 50:
             return True
     return False
 
@@ -108,9 +110,9 @@ def compare_delivery_working_time(delivery_time, working_time):
 def complete_order(courier_id, order_id, complete_time):
 
     # find Worker with courier_id = courier_id
-    courier = Worker.objects.get(courier_id=courier_id)
+    courier = Courier.objects.get(courier_id=courier_id)
     try:
-        order_in_order_to_worker = Order_to_Worker.objects.get(order__order_id=order_id, courier__courier_id=courier_id)
+        order_in_order_to_worker = Order_to_Courier.objects.get(order__order_id=order_id, courier__courier_id=courier_id)
     except:
         raise ValidationError(message="courier have not these order")
     else:
@@ -121,8 +123,11 @@ def complete_order(courier_id, order_id, complete_time):
             time_assign=order_in_order_to_worker.time_order
         )
         order.save()
-
         # delete order in Order
         not_exist_order = Order.objects.get(order_id=order_id)
         not_exist_order.delete()
 
+    # zero weight)
+    if not Order_to_Courier.objects.filter(courier=courier):
+        courier.currently_weight = 0
+        courier.save()
