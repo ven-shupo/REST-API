@@ -126,10 +126,13 @@ def min_avg_del_time(courier_id):
 
         avg_time_for_each_regions.append(statistics.mean(time))
 
-        for complete_order in Complete_Order.objects.filter(courier=courier):
-            for assign_order in Order_to_Courier.objects.filter(courier=courier):
-                if complete_order.time_assign == assign_order.time_order:
-                    raise AssertionError
+    for complete_order in Complete_Order.objects.filter(courier=courier):
+        for assign_order in Order_to_Courier.objects.filter(courier=courier):
+            if complete_order.time_assign == assign_order.time_order:
+                raise AssertionError
+
+    if not avg_time_for_each_regions:
+        raise AssertionError
 
     return min(avg_time_for_each_regions)
 
@@ -173,7 +176,10 @@ class CourierGetUpdateView(View):
             print(error)
             return HttpResponse(status=400)
         except AssertionError:
-            earnings = count_earnings(courier_id)
+            try:
+                earnings = count_earnings(courier_id)
+            except IndexError:
+                earnings = 0
             response_data = {
                 "courier_id": courier_id,
                 "courier_type": courier.courier_type,
