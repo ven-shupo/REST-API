@@ -1,5 +1,6 @@
 import datetime
 import json
+import statistics
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse
@@ -9,7 +10,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from couriers.models import Region, Courier, Working_hours
 from couriers.query import set_id, set_interval, set_regions
-from orders.models import Order_to_Courier, Delivery_time
+from orders.models import Order_to_Courier, Delivery_time, Complete_Order
 
 
 @csrf_exempt
@@ -75,6 +76,7 @@ def post_couriers(request):
 
     return JsonResponse(data_response, status=status_response)
 
+
 def get_weight(courier):
     courier_type = courier.courier_type
     if courier_type == "foot":
@@ -84,8 +86,113 @@ def get_weight(courier):
     if courier_type == "car":
         return 50
 
+
+def min_avg_del_time(courier_id):
+    courier = Courier.objects.get(courier_id=courier_id)
+    regions = [order.region for order in Complete_Order.objects.filter(courier=courier).all()]
+    avg_time_for_each_regions = []
+    for reg in list(set(regions)):
+        time = []
+        complete_orders = Complete_Order.objects.filter(courier=courier, region=reg).order_by('time_complete')
+        begin_year, begin_month, begin_day = int(complete_orders[0].time_assign.strftime("%Y")),\
+                                             int(complete_orders[0].time_assign.strftime("%m")),\
+                                             int(complete_orders[0].time_assign.strftime("%d"))
+        end_year, end_month, end_day = int(complete_orders[0].time_complete.strftime("%Y")),\
+                                       int(complete_orders[0].time_complete.strftime("%m")),\
+                                       int(complete_orders[0].time_complete.strftime("%d"))
+        day_delta = (end_year-begin_year)*366*24*60 + (end_month-begin_month)*30*24*60 + (end_day-begin_day)*24*60
+
+        begin_hours, begin_minutes = int(complete_orders[0].time_assign.strftime("%H")), \
+                                     int(complete_orders[0].time_assign.strftime("%M"))
+        end_hours, end_minutes = int(complete_orders[0].time_complete.strftime("%H")), \
+                                 int(complete_orders[0].time_complete.strftime("%M"))
+        time.append((end_hours - begin_hours) * 60 + (end_minutes - begin_minutes) + day_delta)
+
+        for i in range(1, len(complete_orders)):
+            begin_year, begin_month, begin_day = int(complete_orders[i-1].time_complete.strftime("%Y")), \
+                                                 int(complete_orders[i-1].time_complete.strftime("%m")), \
+                                                 int(complete_orders[i-1].time_complete.strftime("%d"))
+            end_year, end_month, end_day = int(complete_orders[i].time_complete.strftime("%Y")), \
+                                           int(complete_orders[i].time_complete.strftime("%m")), \
+                                           int(complete_orders[i].time_complete.strftime("%d"))
+            day_delta = (end_year - begin_year) * 366 * 24 * 60 + (end_month - begin_month) * 30 * 24 * 60 + (
+                        end_day - begin_day) * 24 * 60
+
+            begin_hours, begin_minutes = int(complete_orders[i-1].time_complete.strftime("%H")), \
+                                         int(complete_orders[i-1].time_complete.strftime("%M"))
+            end_hours, end_minutes = int(complete_orders[i].time_complete.strftime("%H")), \
+                                     int(complete_orders[i].time_complete.strftime("%M"))
+            time.append((end_hours - begin_hours) * 60 + (end_minutes - begin_minutes) + day_delta)
+
+        avg_time_for_each_regions.append(statistics.mean(time))
+
+        for complete_order in Complete_Order.objects.filter(courier=courier):
+            for assign_order in Order_to_Courier.objects.filter(courier=courier):
+                if complete_order.time_assign == assign_order.time_order:
+                    raise AssertionError
+
+    return min(avg_time_for_each_regions)
+
+
+def count_rating(courier_id):
+    return (60 * 60 - min(min_avg_del_time(courier_id), 60 * 60)) * 5 / (60 * 60)
+
+
+def get_C(courier_id) :
+    courier_type = Courier.objects.get(courier_id=courier_id).courier_type
+    if courier_type == "foot":
+        return 2
+    if courier_type == "bike":
+        return 5
+    if courier_type == "car":
+        return 9
+
+
+def count_earnings(courier_id):
+    complete_orders = Complete_Order.objects.filter(courier__courier_id=courier_id)
+    return len(complete_orders) * complete_orders[0].c
+
+
 @method_decorator(csrf_exempt, name='dispatch')
-class CourierUpdateView(View):
+class CourierGetUpdateView(View):
+
+    def get(self, request, courier_id):
+        try:
+            courier = Courier.objects.get(courier_id=courier_id)
+            courier_regions = [region.place for region in courier.regions.all()]
+            courier_time = ["{}-{}".format(time.begin.strftime("%H:%M"), time.end.strftime("%H:%M")) for time
+                            in Working_hours.objects.filter(courier=courier).all()]
+        except ObjectDoesNotExist as error:
+            print(error)
+            return HttpResponse(status=400)
+
+        try:
+            rating = count_rating(courier_id)
+            earnings = count_earnings(courier_id)
+        except ObjectDoesNotExist as error:
+            print(error)
+            return HttpResponse(status=400)
+        except AssertionError:
+            earnings = count_earnings(courier_id)
+            response_data = {
+                "courier_id": courier_id,
+                "courier_type": courier.courier_type,
+                "regions": courier_regions,
+                "working_hours": courier_time,
+                "earnings": earnings
+            }
+            return JsonResponse(response_data)
+
+        # prepare response
+        response_data = {
+            "courier_id": courier_id,
+            "courier_type": courier.courier_type,
+            "regions": courier_regions,
+            "working_hours": courier_time,
+            "rating": float("%.2f" % rating),
+            "earnings": earnings
+        }
+        return JsonResponse(response_data)
 
     def patch(self, request, courier_id):
         # read request
@@ -206,7 +313,7 @@ class CourierUpdateView(View):
         courier_regions = []
         courier_time = []
         for time in Working_hours.objects.filter(courier=courier).all():
-            courier_time.append("{}-{}".format(time.begin, time.end))
+            courier_time.append("{}-{}".format(time.begin.strftime("%H:%M"), time.end.strftime("%H:%M")))
         for i in Region.objects.filter(couriers__courier_id=courier_id):
             courier_regions.append(i.place)
         response_data = {

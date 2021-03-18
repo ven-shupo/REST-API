@@ -2,6 +2,7 @@ import datetime
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import IntegrityError
 
+from couriers.views import get_C
 from orders.models import Order, Delivery_time, Order_to_Courier, Complete_Order
 from couriers.models import Courier, Region, Working_hours
 
@@ -113,10 +114,13 @@ def complete_order(courier_id, order_id, complete_time):
     courier = Courier.objects.get(courier_id=courier_id)
     order_in_order_to_worker = Order_to_Courier.objects.get(order__order_id=order_id, courier__courier_id=courier_id)
     # create order in Complete Orders
+    c = get_C(courier_id)
     order = Complete_Order.objects.create(
         courier=courier,
         time_complete=complete_time,
-        time_assign=order_in_order_to_worker.time_order
+        time_assign=order_in_order_to_worker.time_order,
+        region=order_in_order_to_worker.order.region,
+        c=c
     )
     order.save()
     # delete order in Order

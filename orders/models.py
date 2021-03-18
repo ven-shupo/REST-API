@@ -43,6 +43,14 @@ class Complete_Order(models.Model):
     courier = models.ForeignKey(Courier, on_delete=models.PROTECT)
     time_assign = models.DateTimeField(blank=True)
     time_complete = models.DateTimeField(blank=True)
+    region = models.IntegerField()
+    c = models.IntegerField()
+
+    def __str__(self):
+        return "courier_id:{} [{}-{}]".format(self.courier.courier_id,
+                                              self.time_assign.strftime("%H:%M"),
+                                              self.time_complete.strftime("%H:%M"))
+
 
 
 

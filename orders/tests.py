@@ -138,6 +138,6 @@ class OrderTestCase(TestCase):
         self.assertEqual(response_complete.status_code, 200)
 
         if len(Complete_Order.objects.all()) != 1:
-            raise AssertionError("probem with complete")
+            raise AssertionError("problem with complete")
         if Order_to_Courier.objects.filter(order__order_id=1):
-            raise AssertionError("probem with complete")
+            raise AssertionError("problem with complete")
