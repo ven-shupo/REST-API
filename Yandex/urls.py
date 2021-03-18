@@ -17,11 +17,11 @@ from django.conf.urls import url
 from django.contrib import admin
 from django.urls import include, path
 
-from myapp.views import CourierUpdateView
+from couriers.views import CourierGetUpdateView
 
 urlpatterns = [
     url('^couriers$', include('couriers.urls')),
-    path('couriers/<int:courier_id>', CourierUpdateView.as_view()),
+    path('couriers/<int:courier_id>', CourierGetUpdateView.as_view()),
     url('^orders', include('orders.urls')),
     url('admin/', admin.site.urls),
 ]

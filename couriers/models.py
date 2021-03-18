@@ -14,7 +14,7 @@ class Region(models.Model):
     place = models.IntegerField(unique=True, validators=[checker])
 
 
-class Worker(models.Model):
+class Courier(models.Model):
 
     # ENUM for courier_type
     VEHICLE = [
@@ -26,11 +26,12 @@ class Worker(models.Model):
     # feature's worker
     courier_id = models.IntegerField(primary_key=True, validators=[checker])
     courier_type = models.CharField(max_length=200, choices=VEHICLE)
+    currently_weight = models.FloatField(default=0)
     regions = models.ManyToManyField(Region, related_name='couriers')
 
 
-class Schedule(models.Model):
+class Working_hours(models.Model):
     # Schedule workers
-    courier = models.ForeignKey(Worker, on_delete=models.CASCADE)
+    courier = models.ForeignKey(Courier, on_delete=models.CASCADE)
     begin = models.TimeField()
     end = models.TimeField()
