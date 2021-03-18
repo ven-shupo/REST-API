@@ -140,6 +140,9 @@ def complete(request):
     except ValueError as error:
         print(error)
         return HttpResponse(status=400)
+    except ObjectDoesNotExist as error:
+        print(error)
+        return HttpResponse(status=400)
     # add complete order
     try:
         complete_order(courier_id, order_id, complete_time)

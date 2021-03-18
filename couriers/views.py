@@ -75,6 +75,14 @@ def post_couriers(request):
 
     return JsonResponse(data_response, status=status_response)
 
+def get_weight(courier):
+    courier_type = courier.courier_type
+    if courier_type == "foot":
+        return 10
+    if courier_type == "bike":
+        return 15
+    if courier_type == "car":
+        return 50
 
 @method_decorator(csrf_exempt, name='dispatch')
 class CourierUpdateView(View):
@@ -108,7 +116,23 @@ class CourierUpdateView(View):
             except ValidationError as error:
                 print(error)
                 return HttpResponse(status=400)
+            # EDIT ORDER TO COURIER
+            temp_courier = Courier.objects.get(courier_id=courier_id)
+            while temp_courier.currently_weight > get_weight(temp_courier):
+                temp_courier.currently_weight -= \
+                    Order_to_Courier.objects.filter(courier__courier_id=courier_id)[0].order.weight
+                Order_to_Courier.objects.filter(courier__courier_id=courier_id)[0].delete()
+                temp_courier.save()
+
         if data.get("regions"):
+            # validation
+            if not isinstance(data.get("regions"), list):
+                print("regions is not valid")
+                return HttpResponse(status=400)
+            for item in data.get("regions"):
+                if not isinstance(item, int):
+                    return HttpResponse(status=400)
+
             # CHANGE REGION
             not_valid = 0
             new_regs = []
@@ -132,10 +156,13 @@ class CourierUpdateView(View):
                 new_reg.save()
                 courier.regions.add(new_reg)
             # EDIT ORDER_TO_WORKER
-            for i in Order_to_Courier.objects.filter(courier=courier):
-                if i.order.region not in courier_regions:
+            for i in Order_to_Courier.objects.filter(courier__courier_id=courier_id):
+                if i.order.region not in data.get("regions"):
                     i.delete()
         if data.get("working_hours"):
+            # validation
+            if not isinstance(data.get("working_hours"), list):
+                return HttpResponse(status=400)
             valid_time = []
             not_valid = 0
             # CHANGE

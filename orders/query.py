@@ -111,21 +111,17 @@ def complete_order(courier_id, order_id, complete_time):
 
     # find Worker with courier_id = courier_id
     courier = Courier.objects.get(courier_id=courier_id)
-    try:
-        order_in_order_to_worker = Order_to_Courier.objects.get(order__order_id=order_id, courier__courier_id=courier_id)
-    except:
-        raise ValidationError(message="courier have not these order")
-    else:
-        # create order in Complete Orders
-        order = Complete_Order.objects.create(
-            courier=courier,
-            time_complete=complete_time,
-            time_assign=order_in_order_to_worker.time_order
-        )
-        order.save()
-        # delete order in Order
-        not_exist_order = Order.objects.get(order_id=order_id)
-        not_exist_order.delete()
+    order_in_order_to_worker = Order_to_Courier.objects.get(order__order_id=order_id, courier__courier_id=courier_id)
+    # create order in Complete Orders
+    order = Complete_Order.objects.create(
+        courier=courier,
+        time_complete=complete_time,
+        time_assign=order_in_order_to_worker.time_order
+    )
+    order.save()
+    # delete order in Order
+    not_exist_order = Order.objects.get(order_id=order_id)
+    not_exist_order.delete()
 
     # zero weight)
     if not Order_to_Courier.objects.filter(courier=courier):

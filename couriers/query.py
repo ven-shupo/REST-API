@@ -8,6 +8,7 @@ def set_id(people):
     worker = Courier()
     worker.courier_id = people["courier_id"]
     worker.courier_type = people['courier_type']
+    worker.currently_weight = 0
     # validation
     worker.full_clean()
     return worker
