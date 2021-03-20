@@ -96,7 +96,7 @@ def assign(request):
         print(error)
         return HttpResponse(status=400)
     else:
-        if Order_to_Courier.objects.filter(courier=courier):
+        if len(Order_to_Courier.objects.filter(courier=courier)) > 0:
             not_complete_order_list = []
             not_complete_assign_time = None
             for task in Order_to_Courier.objects.filter(courier=courier):

@@ -1,10 +1,18 @@
 import datetime
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import IntegrityError
-
-from couriers.views import get_C
 from orders.models import Order, Delivery_time, Order_to_Courier, Complete_Order
 from couriers.models import Courier, Region, Working_hours
+
+
+def get_C(courier_id):
+    courier_type = Courier.objects.get(courier_id=courier_id).courier_type
+    if courier_type == "foot":
+        return 2
+    if courier_type == "bike":
+        return 5
+    if courier_type == "car":
+        return 9
 
 
 def set_id(order_info):
@@ -102,14 +110,28 @@ def compare_weight_type(order, courier):
     return False
 
 
+# ((`prime_start` < `prime_end` AND @start < @end)
+# 		AND  NOT (`prime_end`<= @start  OR  @end <=`prime_start` )
+#  	OR
+# 	(( (`prime_start` < `prime_end` AND @start > @end) OR (`prime_start` > `prime_end` AND @start < @end))
+# 		AND NOT
+# 		( `prime_end` <= @start AND @end <= `prime_start` ))
+# 	OR (`prime_start` > `prime_end` AND @start > @end))
+
+
 def compare_delivery_working_time(delivery_time, working_time):
-    if delivery_time.begin >= working_time.begin or delivery_time.end <= working_time.end:
+    if ((delivery_time.begin < delivery_time.end and working_time.begin < working_time.end)
+            and not (delivery_time.end <= working_time.begin or working_time.end <= delivery_time.begin)
+            or (((delivery_time.begin < delivery_time.end and working_time.begin > working_time.end)
+                 or (delivery_time.begin > delivery_time.end and working_time.begin < working_time.end))
+                and not (delivery_time.end <= working_time.begin and working_time.end <= delivery_time.begin))
+            or (delivery_time.begin > delivery_time.end and working_time.begin > working_time.end)):
         return True
-    return False
+    else:
+        return False
 
 
 def complete_order(courier_id, order_id, complete_time):
-
     # find Worker with courier_id = courier_id
     courier = Courier.objects.get(courier_id=courier_id)
     order_in_order_to_worker = Order_to_Courier.objects.get(order__order_id=order_id, courier__courier_id=courier_id)
