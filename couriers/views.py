@@ -50,6 +50,10 @@ def post_couriers(request):
             have_not_valid_data = 0
             print(error)
             bad_id.append({'id': worker['courier_id']})
+        except KeyError as error:
+            have_not_valid_data = 0
+            print(error)
+            bad_id.append({'id': worker['courier_id']})
         else:
             if all_interval != [] and all_regions != [] and courier:
                 valid_data["valid"].append({"courier_id": courier,

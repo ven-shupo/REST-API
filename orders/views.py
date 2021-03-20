@@ -56,6 +56,10 @@ def post_orders(request):
             have_not_valid_data = 1
             print(error)
             bad_id.append({'id': order_info['order_id']})
+        except KeyError as error:
+            have_not_valid_data = 1
+            print(error)
+            bad_id.append({'id': order_info['order_id']})
         else:
             if order:
                 valid_data["valid"].append({"order_id": order,
@@ -143,6 +147,9 @@ def complete(request):
     except ObjectDoesNotExist as error:
         print(error)
         return HttpResponse(status=400)
+    except KeyError as error:
+        print(error)
+        return HttpResponse(status=400)
     # add complete order
     try:
         complete_order(courier_id, order_id, complete_time)
@@ -150,6 +157,9 @@ def complete(request):
         print(error)
         return HttpResponse(status=400)
     except ObjectDoesNotExist as error:
+        print(error)
+        return HttpResponse(status=400)
+    except KeyError as error:
         print(error)
         return HttpResponse(status=400)
     else:
