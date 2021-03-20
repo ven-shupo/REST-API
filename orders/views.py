@@ -22,6 +22,15 @@ def post_orders(request):
     valid_data = {"valid": []}
 
     # validation
+    for order in list_order:
+        for key in order:
+            if key not in ["order_id", "weight", "region", "delivery_hours"]:
+                bad_id.append({'id': order['order_id']})
+    if bad_id:
+        data_response = {"validation_error": {"orders": bad_id}}
+        status_response = 400
+        return JsonResponse(data_response, status=status_response)
+
     all_id = []
     not_unique_id = []
     for order in list_order:

@@ -32,6 +32,15 @@ def post_couriers(request):
     # flags
     have_not_valid_data = 1
 
+    for worker in list_couriers:
+        for key in worker:
+            if key not in ["courier_id", "courier_type", "regions", "working_hours"]:
+                bad_id.append({'id': worker['courier_id']})
+    if bad_id:
+        data_response = {"validation_error": {"couriers": bad_id}}
+        status_response = 400
+        return JsonResponse(data_response, status=status_response)
+
     # fill in db
     for worker in list_couriers:
         try:
@@ -211,6 +220,10 @@ class CourierGetUpdateView(View):
     def patch(self, request, courier_id):
         # read request
         data = json.loads(request.body)
+
+        for key in data:
+            if key not in ["courier_type", "regions", "working_hours"]:
+                return HttpResponse(status=400)
 
         # validation
         try:
