@@ -1,7 +1,11 @@
 import datetime
 import json
 import statistics
+
+import django
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.serializers import serialize
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
@@ -11,6 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from couriers.models import Region, Courier, Working_hours
 from couriers.query import set_id, set_interval, set_regions
 from orders.models import Order_to_Courier, Delivery_time, Complete_Order
+from orders.query import compare_delivery_working_time
 
 
 @csrf_exempt
@@ -141,7 +146,7 @@ def count_rating(courier_id):
     return (60 * 60 - min(min_avg_del_time(courier_id), 60 * 60)) * 5 / (60 * 60)
 
 
-def get_C(courier_id) :
+def get_C(courier_id):
     courier_type = Courier.objects.get(courier_id=courier_id).courier_type
     if courier_type == "foot":
         return 2
@@ -309,7 +314,7 @@ class CourierGetUpdateView(View):
             for i in Order_to_Courier.objects.filter(courier=courier):
                 for ctime in Working_hours.objects.filter(courier=courier).all():
                     for t in Delivery_time.objects.filter(order=i.order).all():
-                        if ctime.end < t.begin or ctime.begin > t.end:
+                        if not compare_delivery_working_time(ctime, t):
                             i.delete()
         if not_valid:
             return HttpResponse(status=400)
