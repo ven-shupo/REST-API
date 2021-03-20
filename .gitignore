@@ -1,2 +1,6 @@
-"*.py[co]" 
-"__pycach__/"
+DATABASE
+env/
+static/
+__pycach__/
+couriers/migrations/__pycach__/
+orders/migrations/__pycach__/
