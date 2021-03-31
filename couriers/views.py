@@ -79,14 +79,6 @@ def post_couriers(request):
         for person in valid_data["valid"]:
             person["courier_id"].save()
             for reg in person["regions"]:
-<<<<<<< HEAD
-		try:
-			reg.save()
-			person["courier_id"].regions.add(reg)
-		except IntegrityError:
-			exist_reg = Region.objects.get(place=reg.place)
-			person["courier_id"].regions.add(exist_reg)
-=======
                 try:
                     reg.save()
                     person["courier_id"].regions.add(reg)
@@ -94,7 +86,6 @@ def post_couriers(request):
                     # get exist reg
                     exist_reg = Region.objects.get(place=reg.place)
                     person["courier_id"].regions.add(exist_reg)
->>>>>>> 846534a723d353996ca42f0ef93fb4a3d1dc6b5d
             for interval in person["working_hours"]:
                 interval.save()
 
