@@ -86,6 +86,7 @@ def post_couriers(request):
                     # get exist reg
                     exist_reg = Region.objects.get(place=reg.place)
                     person["courier_id"].regions.add(exist_reg)
+            person["courier_id"].save()
             for interval in person["working_hours"]:
                 interval.save()
 
