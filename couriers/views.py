@@ -91,6 +91,7 @@ def post_couriers(request):
                     reg.save()
                     person["courier_id"].regions.add(reg)
                 except IntegrityError:
+                    # get exist reg
                     exist_reg = Region.objects.get(place=reg.place)
                     person["courier_id"].regions.add(exist_reg)
 >>>>>>> 846534a723d353996ca42f0ef93fb4a3d1dc6b5d
