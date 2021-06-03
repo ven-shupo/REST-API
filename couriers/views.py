@@ -192,7 +192,6 @@ class CourierGetUpdateView(View):
         except ObjectDoesNotExist as error:
             print(error)
             return HttpResponse(status=400)
-
         try:
             rating = count_rating(courier_id)
             earnings = count_earnings(courier_id)
